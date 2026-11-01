@@ -9,7 +9,7 @@ spec:
     serviceAccountName: pipeline
   params:
     - name: git-url
-      value: https://github.com/YOUR_GITHUB_USERNAME/Library-CI-CD.git
+      value: https://github.com/Karthikeyan-52/coursera_proj.git
     - name: git-revision
       value: main
     - name: image

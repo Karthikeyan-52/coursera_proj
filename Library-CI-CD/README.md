@@ -73,7 +73,7 @@ The container runs as UID 1001 (and is prepared for OpenShift's arbitrary non-ro
 
 ## Deploy to OpenShift with Tekton
 
-These commands assume `oc` is installed, you are logged into the target cluster, and the OpenShift Pipelines Operator is installed. Replace `YOUR_NAMESPACE` and `YOUR_GITHUB_USERNAME` with real values. The image reference below must be the same one passed to the pipeline.
+These commands assume `oc` is installed, you are logged into an OpenShift cluster, and the OpenShift Pipelines Operator is installed. Replace `YOUR_NAMESPACE` with the actual OpenShift project name in `.tekton/pipelinerun.yml` and `PROJECT_NAMESPACE` in `openshift/deployment.yml`. The image reference in the PipelineRun must use the same namespace as the OpenShift project.
 
 ### 1. Select the project and create the workspace PVC
 
@@ -122,7 +122,7 @@ This permission is for the image-build task only; the deployed Flask container i
 
 ### 4. Set the Git URL and image, then run
 
-Edit `.tekton/pipelinerun.yml` and replace `YOUR_GITHUB_USERNAME` and `YOUR_NAMESPACE`. The image value should be:
+Edit `.tekton/pipelinerun.yml` and replace both occurrences of `YOUR_NAMESPACE`. Its Git URL already points to this repository. The image value should be:
 
 ```text
 image-registry.openshift-image-registry.svc:5000/YOUR_NAMESPACE/library-cicd:latest

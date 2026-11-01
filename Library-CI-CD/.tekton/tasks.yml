@@ -50,7 +50,7 @@ spec:
         #!/bin/sh
         set -eu
         python -m pip install --no-cache-dir flake8==7.2.0
-        flake8 app.py tests
+        flake8 app.py tests sitecustomize.py
 ---
 apiVersion: tekton.dev/v1
 kind: Task
@@ -67,7 +67,7 @@ spec:
         #!/bin/sh
         set -eu
         python -m pip install --no-cache-dir -r requirements.txt
-        export PYTHONPATH="$(workspaces.source.path)"
+        export PYTHONPATH="$(workspaces.source.path)/Library-CI-CD"
         python -m nose -v tests.test_app
 ---
 apiVersion: tekton.dev/v1
