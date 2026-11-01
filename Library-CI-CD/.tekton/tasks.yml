@@ -76,31 +76,22 @@ metadata:
   name: buildah
 spec:
   params:
-    - name: image
+    - name: namespace
       type: string
   workspaces:
     - name: source
   steps:
-    - name: build-and-push
-      image: quay.io/buildah/stable:v1.38.0
-      workingDir: $(workspaces.source.path)/Library-CI-CD
-      securityContext:
-        privileged: true
+    - name: build-with-openshift-buildah
+      image: quay.io/openshift/origin-cli:4.15
       env:
-        - name: STORAGE_DRIVER
-          value: vfs
-        - name: IMAGE
-          value: $(params.image)
+        - name: TARGET_NAMESPACE
+          value: $(params.namespace)
       script: |
         #!/bin/sh
         set -eu
-        registry="${IMAGE%%/*}"
-        token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
-        buildah login --tls-verify=false --username unused \
-          --password "$token" "$registry"
-        buildah bud --storage-driver=vfs --format docker \
-          --tag "$IMAGE" --file Dockerfile .
-        buildah push --storage-driver=vfs --tls-verify=false "$IMAGE"
+        oc start-build library-cicd \
+          --from-dir="$(workspaces.source.path)/Library-CI-CD" \
+          --follow --wait --namespace="$TARGET_NAMESPACE"
 ---
 apiVersion: tekton.dev/v1
 kind: Task

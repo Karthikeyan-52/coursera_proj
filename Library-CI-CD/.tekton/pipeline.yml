@@ -57,8 +57,8 @@ spec:
       taskRef:
         name: buildah
       params:
-        - name: image
-          value: $(params.image)
+        - name: namespace
+          value: $(params.namespace)
       workspaces:
         - name: source
           workspace: shared-workspace

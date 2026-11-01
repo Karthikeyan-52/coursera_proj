@@ -1,0 +1,18 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: library-cicd
+  labels:
+    app: library-cicd
+spec:
+  runPolicy: Serial
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy: {}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: library-cicd:latest

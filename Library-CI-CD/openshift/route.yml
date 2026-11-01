@@ -8,3 +8,6 @@ spec:
     name: library-cicd
   port:
     targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

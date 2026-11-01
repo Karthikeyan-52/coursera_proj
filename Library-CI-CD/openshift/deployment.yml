@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: library-cicd
-          image: image-registry.openshift-image-registry.svc:5000/PROJECT_NAMESPACE/library-cicd:latest
+          image: image-registry.openshift-image-registry.svc:5000/karthikeyan-52-dev/library-cicd:latest
           imagePullPolicy: Always
           ports:
             - name: http

@@ -73,12 +73,12 @@ The container runs as UID 1001 (and is prepared for OpenShift's arbitrary non-ro
 
 ## Deploy to OpenShift with Tekton
 
-These commands assume `oc` is installed, you are logged into an OpenShift cluster, and the OpenShift Pipelines Operator is installed. Replace `YOUR_NAMESPACE` with the actual OpenShift project name in `.tekton/pipelinerun.yml` and `PROJECT_NAMESPACE` in `openshift/deployment.yml`. The image reference in the PipelineRun must use the same namespace as the OpenShift project.
+These commands assume `oc` is installed, you are logged into OpenShift, and the OpenShift Pipelines Operator is installed. The checked-in PipelineRun and Deployment are configured for the `karthikeyan-52-dev` project; if you use another project, change the namespace in `.tekton/pipelinerun.yml` and the image reference in `openshift/deployment.yml` to match.
 
 ### 1. Select the project and create the workspace PVC
 
 ```powershell
-oc project YOUR_NAMESPACE
+oc project karthikeyan-52-dev
 oc apply -f .tekton/pvc.yml
 ```
 
@@ -92,12 +92,14 @@ Replace `PROJECT_NAMESPACE` in `openshift/deployment.yml` with the namespace nam
 oc apply -f openshift/deployment.yml
 oc apply -f openshift/service.yml
 oc apply -f openshift/route.yml
+oc apply -f openshift/imagestream.yml
+oc apply -f openshift/buildconfig.yml
 ```
 
-The Deployment image placeholder is:
+The Deployment image reference is:
 
 ```text
-image-registry.openshift-image-registry.svc:5000/PROJECT_NAMESPACE/library-cicd:latest
+image-registry.openshift-image-registry.svc:5000/karthikeyan-52-dev/library-cicd:latest
 ```
 
 The PipelineRun supplies this same image to Buildah and the deployment task.
@@ -108,24 +110,17 @@ The PipelineRun supplies this same image to Buildah and the deployment task.
 oc apply -f .tekton/tasks.yml
 oc apply -f .tekton/pipeline.yml
 oc create serviceaccount pipeline
-oc adm policy add-role-to-user edit -z pipeline -n YOUR_NAMESPACE
-oc adm policy add-role-to-user system:image-builder -z pipeline -n YOUR_NAMESPACE
+oc adm policy add-role-to-user edit -z pipeline -n karthikeyan-52-dev
 ```
 
-The Buildah task uses privileged mode for compatibility with the standard Buildah storage/build workflow. A cluster administrator must grant the `privileged` SCC to this pipeline service account if the cluster's policy requires it:
-
-```powershell
-oc adm policy add-scc-to-user privileged -z pipeline -n YOUR_NAMESPACE
-```
-
-This permission is for the image-build task only; the deployed Flask container itself runs non-root. Follow your organization's cluster policy before granting elevated permissions.
+The Tekton `buildah` stage sends the tested source to this OpenShift Docker-strategy BuildConfig. OpenShift runs the image build with its managed Buildah builder, avoiding a privileged Buildah container in the restricted Tekton task pod.
 
 ### 4. Set the Git URL and image, then run
 
-Edit `.tekton/pipelinerun.yml` and replace both occurrences of `YOUR_NAMESPACE`. Its Git URL already points to this repository. The image value should be:
+The PipelineRun Git URL already points to this repository. Confirm that its namespace and image values match the OpenShift project:
 
 ```text
-image-registry.openshift-image-registry.svc:5000/YOUR_NAMESPACE/library-cicd:latest
+image-registry.openshift-image-registry.svc:5000/karthikeyan-52-dev/library-cicd:latest
 ```
 
 Import and start the run:
@@ -158,7 +153,7 @@ oc get pods -l app=library-cicd
 oc logs deployment/library-cicd
 ```
 
-The application log should contain the exact startup line `SERVICERUNNING`. Open the URL shown by `oc get route library-cicd` to visit the home page.
+The application log should contain the exact startup line `SERVICERUNNING`. Open `https://` followed by the host shown by `oc get route library-cicd` to visit the home page; HTTP requests redirect to HTTPS.
 
 ## Push the project to GitHub
 
