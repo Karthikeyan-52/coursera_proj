@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: library-cicd-pipeline
+spec:
+  params:
+    - name: git-url
+      type: string
+    - name: git-revision
+      type: string
+      default: main
+    - name: image
+      type: string
+    - name: namespace
+      type: string
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: cleanup
+      taskRef:
+        name: cleanup
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: git-clone
+      runAfter:
+        - cleanup
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: flake8
+      runAfter:
+        - git-clone
+      taskRef:
+        name: flake8
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: nose
+      runAfter:
+        - flake8
+      taskRef:
+        name: nose
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: buildah
+      runAfter:
+        - nose
+      taskRef:
+        name: buildah
+      params:
+        - name: image
+          value: $(params.image)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: openshift-client
+      runAfter:
+        - buildah
+      taskRef:
+        name: openshift-client
+      params:
+        - name: image
+          value: $(params.image)
+        - name: namespace
+          value: $(params.namespace)

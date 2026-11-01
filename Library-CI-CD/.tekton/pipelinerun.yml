@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: library-cicd-run
+spec:
+  pipelineRef:
+    name: library-cicd-pipeline
+  taskRunTemplate:
+    serviceAccountName: pipeline
+  params:
+    - name: git-url
+      value: https://github.com/YOUR_GITHUB_USERNAME/Library-CI-CD.git
+    - name: git-revision
+      value: main
+    - name: image
+      value: image-registry.openshift-image-registry.svc:5000/YOUR_NAMESPACE/library-cicd:latest
+    - name: namespace
+      value: YOUR_NAMESPACE
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: library-cicd-workspace

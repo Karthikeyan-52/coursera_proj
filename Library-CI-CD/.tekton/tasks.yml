@@ -1,0 +1,132 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: cleanup
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: remove-old-source
+      image: alpine:3.20
+      script: |
+        #!/bin/sh
+        set -eu
+        find "$(workspaces.source.path)" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: git-clone
+spec:
+  params:
+    - name: url
+      type: string
+    - name: revision
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: clone
+      image: alpine/git:2.47.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -eu
+        git clone --depth 1 --branch "$(params.revision)" \
+          "$(params.url)" "$(workspaces.source.path)"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: flake8
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: lint
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -eu
+        python -m pip install --no-cache-dir flake8==7.2.0
+        flake8 app.py tests
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: nose
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: unit-tests
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -eu
+        python -m pip install --no-cache-dir -r requirements.txt
+        export PYTHONPATH="$(workspaces.source.path)"
+        python -m nose -v tests.test_app
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: buildah
+spec:
+  params:
+    - name: image
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: build-and-push
+      image: quay.io/buildah/stable:v1.38.0
+      workingDir: $(workspaces.source.path)
+      securityContext:
+        privileged: true
+      env:
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: IMAGE
+          value: $(params.image)
+      script: |
+        #!/bin/sh
+        set -eu
+        registry="${IMAGE%%/*}"
+        token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+        buildah login --tls-verify=false --username unused \
+          --password "$token" "$registry"
+        buildah bud --storage-driver=vfs --format docker \
+          --tag "$IMAGE" --file Dockerfile .
+        buildah push --storage-driver=vfs --tls-verify=false "$IMAGE"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: openshift-client
+spec:
+  params:
+    - name: image
+      type: string
+    - name: namespace
+      type: string
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:4.15
+      env:
+        - name: IMAGE
+          value: $(params.image)
+        - name: TARGET_NAMESPACE
+          value: $(params.namespace)
+      script: |
+        #!/bin/sh
+        set -eu
+        oc project "$TARGET_NAMESPACE"
+        oc set image deployment/library-cicd library-cicd="$IMAGE" \
+          --namespace="$TARGET_NAMESPACE"
+        oc rollout restart deployment/library-cicd \
+          --namespace="$TARGET_NAMESPACE"
+        oc rollout status deployment/library-cicd \
+          --namespace="$TARGET_NAMESPACE" --timeout=180s
