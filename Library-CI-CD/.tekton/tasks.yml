@@ -45,7 +45,7 @@ spec:
   steps:
     - name: lint
       image: python:3.11-slim
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.source.path)/Library-CI-CD
       script: |
         #!/bin/sh
         set -eu
@@ -62,7 +62,7 @@ spec:
   steps:
     - name: unit-tests
       image: python:3.11-slim
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.source.path)/Library-CI-CD
       script: |
         #!/bin/sh
         set -eu
@@ -83,7 +83,7 @@ spec:
   steps:
     - name: build-and-push
       image: quay.io/buildah/stable:v1.38.0
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.source.path)/Library-CI-CD
       securityContext:
         privileged: true
       env:

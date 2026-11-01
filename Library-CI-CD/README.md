@@ -58,7 +58,7 @@ Invoke-RestMethod -Method Delete http://localhost:8000/api/books/1
 
 ## GitHub Actions
 
-The workflow is `.github/workflows/workflow.yml`. Create a GitHub repository, push this project to its `main` branch, and make sure Actions are enabled under the repository's **Settings → Actions → General**. The workflow runs on pushes to `main` and pull requests targeting `main`; it installs `requirements.txt`, runs flake8, and then runs nose. No repository secrets are needed for these checks.
+The repository-root workflow is `../.github/workflows/workflow.yml`. GitHub only discovers Actions workflows under the repository root `.github/workflows/`; this repository stores the project itself in the `Library-CI-CD/` subfolder. Push changes to `main` (or open a pull request targeting `main`) and make sure Actions are enabled under **Settings → Actions → General**. It installs this folder's `requirements.txt`, runs flake8, and then runs nose. No repository secrets are needed for these checks.
 
 ## Build and run the container locally
 
@@ -162,15 +162,12 @@ The application log should contain the exact startup line `SERVICERUNNING`. Open
 
 ## Push the project to GitHub
 
-Run these commands from the `Library-CI-CD` folder after creating an empty GitHub repository:
+Run these commands from the repository root (the parent folder of `Library-CI-CD`) after setting its `origin` remote to your GitHub repository:
 
 ```powershell
-git init
-git add .
+git add Library-CI-CD .github
 git commit -m "Create Library Management System CI/CD project"
-git branch -M main
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/Library-CI-CD.git
-git push -u origin main
+git push origin main
 ```
 
 If Git prompts for credentials, authenticate with GitHub's supported browser flow or a credential manager; do not put a personal access token in the remote URL.
